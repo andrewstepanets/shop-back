@@ -11,7 +11,11 @@
   },
   "dependencies": {
     "@middy/core": "^3.4.0",
-    "@middy/http-json-body-parser": "^3.4.0"
+    "@middy/http-json-body-parser": "^3.4.0",
+    "@types/aws-sdk": "^2.7.0",
+    "aws-sdk": "^2.1473.0",
+    "serverless-dynamodb-local": "^0.2.40",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.21.0",
