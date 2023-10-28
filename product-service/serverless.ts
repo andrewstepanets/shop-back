@@ -118,6 +118,19 @@ const serverlessConfiguration: AWS = {
           },
         },
       },
+      LowStockEmailSubscription: {
+        Type: "AWS::SNS::Subscription",
+        Properties: {
+          Protocol: "email",
+          Endpoint: "andrii.stepanets@gmail.com",
+          TopicArn: {
+            Ref: "CreateProductTopic",
+          },
+          FilterPolicy: {
+            count: [{ numeric: ["<", 10] }],
+          },
+        },
+      },
     },
     Outputs: {
       CatalogItemsQueueUrl: {
