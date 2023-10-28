@@ -5,6 +5,8 @@ import csv from "csv-parser";
 import { middyfy } from "@/libs/lambda";
 
 const s3 = new AWS.S3({ region: "eu-west-1" });
+const sqs = new AWS.SQS();
+const CATALOG_ITEMS_QUEUE_URL = process.env.CATALOG_ITEMS_QUEUE_URL;
 
 const processRecord = async (record): Promise<void> => {
   const bucketName = record.s3.bucket.name;
@@ -20,9 +22,28 @@ const processRecord = async (record): Promise<void> => {
 
   return new Promise<void>((resolve, reject) => {
     s3Stream
-      .pipe(csv())
-      .on("data", (data) => {
-        console.log(data);
+      .pipe(csv({ separator: "," }))
+      .on("error", (error) => {
+        console.error("CSV parsing error:", error);
+      })
+      .on("data", async (data) => {
+        console.log("its work", data);
+        await sqs
+          .sendMessage(
+            {
+              QueueUrl: CATALOG_ITEMS_QUEUE_URL,
+              MessageBody: JSON.stringify(data),
+            },
+            function (err, data) {
+              if (err) {
+                console.log("error", err);
+              } else {
+                console.log("Success sent message", data.MessageId);
+                console.log("Message", data.MD5OfMessageBody);
+              }
+            }
+          )
+          .promise();
       })
       .on("end", async () => {
         console.log(`Successfully processed ${originalKey}`);
