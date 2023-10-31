@@ -5,11 +5,7 @@ import { Serverless } from "serverless/aws";
 const serverlessConfiguration: Serverless = {
   service: "import-service",
   frameworkVersion: "3",
-  plugins: [
-    "serverless-esbuild",
-    "serverless-dynamodb-local",
-    "serverless-offline",
-  ],
+  plugins: ["serverless-esbuild", "serverless-offline"],
   provider: {
     name: "aws",
     runtime: "nodejs14.x",
@@ -40,6 +36,11 @@ const serverlessConfiguration: Serverless = {
     },
     importFileParser: {
       ...importFileParser,
+      environment: {
+        CATALOG_ITEMS_QUEUE_URL: {
+          "Fn::ImportValue": "CatalogItemsQueueUrl",
+        },
+      },
     },
   },
   package: { individually: true },

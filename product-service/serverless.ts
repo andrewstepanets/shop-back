@@ -2,6 +2,7 @@ import getProductById from "@/functions/getProductById";
 import getProductsList from "@/functions/getProductsList";
 import createProduct from "@/functions/createProduct";
 import type { AWS } from "@serverless/typescript";
+import catalogBatchProcess from "@/functions/catalogBatchProcess";
 
 const serverlessConfiguration: AWS = {
   service: "product-service",
@@ -40,6 +41,24 @@ const serverlessConfiguration: AWS = {
         ],
         Resource: "arn:aws:dynamodb:*:*:*",
       },
+      {
+        Effect: "Allow",
+        Action: [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+        ],
+        Resource: {
+          "Fn::GetAtt": ["CatalogItemsQueue", "Arn"],
+        },
+      },
+      {
+        Effect: "Allow",
+        Action: ["sns:Publish"],
+        Resource: {
+          Ref: "CreateProductTopic",
+        },
+      },
     ],
   },
   // Import the function via paths
@@ -70,6 +89,57 @@ const serverlessConfiguration: AWS = {
       environment: {
         PRODUCTS_TABLE: "products",
         STOCKS_TABLE: "stocks",
+      },
+    },
+    catalogBatchProcess: {
+      ...catalogBatchProcess,
+      environment: {
+        CREATE_PRODUCT_TOPIC_ARN: {
+          Ref: "CreateProductTopic",
+        },
+      },
+    },
+  },
+  resources: {
+    Resources: {
+      CatalogItemsQueue: {
+        Type: "AWS::SQS::Queue",
+      },
+      CreateProductTopic: {
+        Type: "AWS::SNS::Topic",
+      },
+      EmailSubscription: {
+        Type: "AWS::SNS::Subscription",
+        Properties: {
+          Protocol: "email",
+          Endpoint: "andrii_stepanets@epam.com",
+          TopicArn: {
+            Ref: "CreateProductTopic",
+          },
+        },
+      },
+      LowStockEmailSubscription: {
+        Type: "AWS::SNS::Subscription",
+        Properties: {
+          Protocol: "email",
+          Endpoint: "andrii.stepanets@gmail.com",
+          TopicArn: {
+            Ref: "CreateProductTopic",
+          },
+          FilterPolicy: {
+            count: [{ numeric: ["<", 10] }],
+          },
+        },
+      },
+    },
+    Outputs: {
+      CatalogItemsQueueUrl: {
+        Value: {
+          Ref: "CatalogItemsQueue",
+        },
+        Export: {
+          Name: "CatalogItemsQueueUrl",
+        },
       },
     },
   },
